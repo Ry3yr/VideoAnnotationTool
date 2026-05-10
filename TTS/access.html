@@ -1,0 +1,419 @@
+<a target="_blank" href="http://192.168.0.163:7860">VocalSynth</a> [<a target="_blank" href="https://alceawis.de/other/extra/scripts/ffmpeg/videoaudioannotate.html">AnnotationStudio</a>] <a target="_blank" href="http://192.168.0.163:1234/">PC File UpDownload</a> (<a target="_blank" href="srtparse.html">SrtParse</a>)
+<hr><br>
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Qwen Voice TTS Studio</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Arial', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        .content { padding: 30px; }
+        .status {
+            padding: 10px;
+            text-align: center;
+            font-weight: bold;
+            border-radius: 5px;
+            margin-bottom: 20px;
+        }
+        .status.connected    { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .status.disconnected { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: bold; color: #333; }
+        textarea, input, select {
+            width: 100%;
+            padding: 10px;
+            border: 2px solid #ddd;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        textarea:focus, input:focus, select:focus { outline: none; border-color: #667eea; }
+        .row { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+        .button-group { display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap; }
+        button {
+            padding: 12px 24px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: bold;
+            cursor: pointer;
+            transition: transform 0.2s, opacity 0.2s;
+        }
+        button:hover:not(:disabled) { transform: translateY(-2px); }
+        button:active:not(:disabled) { transform: translateY(0); }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        .btn-primary   { background: #28a745; color: white; }
+        .btn-secondary { background: #007bff; color: white; }
+        .btn-warning   { background: #ffc107; color: #333; }
+        .example-buttons { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 10px; }
+        .example-btn { padding: 5px 12px; font-size: 12px; background: #f0f0f0; color: #333; }
+        .audio-player {
+            margin-top: 20px;
+            padding: 20px;
+            background: #f8f9fa;
+            border-radius: 10px;
+            border: 2px solid #dee2e6;
+            text-align: center;
+        }
+        .audio-controls { display: flex; gap: 15px; justify-content: center; align-items: center; flex-wrap: wrap; }
+        .progress { padding: 10px; text-align: center; color: #666; font-style: italic; }
+        .loading {
+            display: inline-block;
+            width: 20px; height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+            vertical-align: middle;
+        }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        @media (max-width: 768px) {
+            .row { grid-template-columns: 1fr; }
+            .content { padding: 20px; }
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <div class="header">
+        <h1>🎤 Qwen Voice TTS Studio</h1>
+        <p>Text-to-Speech with Emotional Control</p>
+    </div>
+
+    <div class="content">
+        <div id="status" class="status">Checking connection...</div>
+
+        <div class="form-group">
+            <label>📝 Text to Synthesize:</label>
+            <textarea id="textInput" rows="4" placeholder="Enter text here...">test</textarea>
+        </div>
+
+        <div class="row">
+            <div class="form-group">
+                <label>🌐 Language:</label>
+                <select id="language">
+                    <option value="english">English</option>
+                    <option value="german">German</option>
+                    <option value="auto">Auto</option>
+                    <option value="chinese">Chinese</option>
+                    <option value="japanese">Japanese</option>
+                    <option value="korean">Korean</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label>🎙️ Speaker:</label>
+                <select id="speaker">
+                    <option value="CeaLP">CeaLP</option>
+                    <option value="Vivian">Vivian</option>
+                    <option value="Serena">Serena</option>
+                    <option value="Ono Anna">Ono Anna</option>
+                    <option value="Sohee">Sohee</option>
+                </select>
+            </div>
+        </div>
+
+        <div class="form-group">
+            <label>🎭 Vocal Instruction:</label>
+            <input type="text" id="instruct" placeholder="e.g. sound happy, whisper, sound sad">
+            <div class="example-buttons">
+                <button class="example-btn" onclick="setInstruct('sound happy')">😊 sound happy</button>
+                <button class="example-btn" onclick="setInstruct('sound sad')">😢 sound sad</button>
+                <button class="example-btn" onclick="setInstruct('sound angry')">😠 sound angry</button>
+                <button class="example-btn" onclick="setInstruct('whisper')">🤫 whisper</button>
+                <button class="example-btn" onclick="setInstruct('excited')">🎉 excited</button>
+                <button class="example-btn" onclick="setInstruct('calm')">😌 calm</button>
+            </div>
+        </div>
+
+        <div class="button-group">
+            <button class="btn-primary"   id="generateBtn" onclick="generateTTS()">🎵 Generate Speech</button>
+            <button class="btn-secondary" onclick="callLambda()">⚡ Lambda_1</button>
+            <button class="btn-warning"   onclick="refreshTiles()">🔄 Refresh Tiles</button>
+        </div>
+
+        <div id="progress" class="progress"></div>
+
+        <div id="audioPanel" class="audio-player" style="display:none;">
+            <h3>🎧 Generated Audio</h3>
+            <div id="audioControls" class="audio-controls"></div>
+        </div>
+    </div>
+</div>
+
+<script>
+    const SERVER_URL = "http://192.168.0.163:7860";
+    let sessionHash = newHash();
+    let activeSource = null;   // current EventSource
+
+    // Read optional query params from the page URL (set once at load time)
+    const URL_PARAMS    = new URLSearchParams(window.location.search);
+    const URL_TIMESTAMP = URL_PARAMS.get('timestamp') || null;
+
+    // Prefix a filename with the timestamp when one was provided
+    function withTimestamp(filename) {
+        return URL_TIMESTAMP ? `${URL_TIMESTAMP}_${filename}` : filename;
+    }
+
+    function newHash() {
+        return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, c => {
+            const r = Math.random() * 16 | 0;
+            return (c === 'x' ? r : (r & 0x3 | 0x8)).toString(16);
+        });
+    }
+
+    function setInstruct(t) { document.getElementById('instruct').value = t; }
+
+    // ── Connection check ──────────────────────────────────────────────────────
+    async function testConnection() {
+        const el = document.getElementById('status');
+        try {
+            const r = await fetch(`${SERVER_URL}/gradio_api/info`);
+            if (r.ok) {
+                el.textContent = '✅ Connected to TTS Server';
+                el.className = 'status connected';
+            } else throw new Error();
+        } catch {
+            el.textContent = '❌ Not connected to TTS Server';
+            el.className = 'status disconnected';
+        }
+    }
+
+    // ── Main generate flow ────────────────────────────────────────────────────
+    async function generateTTS() {
+        const text = document.getElementById('textInput').value.trim();
+        if (!text) { alert('Please enter some text'); return; }
+
+        const btn      = document.getElementById('generateBtn');
+        const progress = document.getElementById('progress');
+
+        btn.disabled     = true;
+        btn.textContent  = '⏳ Generating...';
+        progress.innerHTML = '<span class="loading"></span> Submitting to queue…';
+
+        // Close any leftover stream
+        if (activeSource) { activeSource.close(); activeSource = null; }
+
+        // Each generation needs a fresh session so results don't cross-contaminate
+        sessionHash = newHash();
+
+        try {
+            const payload = {
+                data:         [text,
+                               document.getElementById('language').value,
+                               document.getElementById('speaker').value,
+                               document.getElementById('instruct').value.trim(),
+                               ""],
+                fn_index:     3,
+                session_hash: sessionHash
+            };
+
+            const qr = await fetch(`${SERVER_URL}/gradio_api/queue/join`, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify(payload)
+            });
+            if (!qr.ok) throw new Error(`Queue join failed: HTTP ${qr.status}`);
+
+            progress.innerHTML = '<span class="loading"></span> Processing…';
+
+            // ── Use EventSource (SSE) to receive the result ───────────────────
+            const audioFile = await streamResult(sessionHash, progress);
+
+            if (!audioFile) throw new Error('No audio path received from server');
+
+            displayAudio(audioFile);
+            progress.innerHTML = '✅ Done!';
+
+        } catch (err) {
+            progress.innerHTML = `❌ ${err.message}`;
+            console.error(err);
+        } finally {
+            btn.disabled    = false;
+            btn.textContent = '🎵 Generate Speech';
+        }
+    }
+
+    // ── SSE helper: returns a Promise<string> with the audio path ─────────────
+    function streamResult(hash, progressEl) {
+        return new Promise((resolve, reject) => {
+            const url = `${SERVER_URL}/gradio_api/queue/data?session_hash=${hash}`;
+            const es  = new EventSource(url);
+            activeSource = es;
+
+            const timeout = setTimeout(() => {
+                es.close();
+                reject(new Error('Timed out waiting for audio (60 s)'));
+            }, 60_000);
+
+            es.onmessage = (evt) => {
+                let msg;
+                try { msg = JSON.parse(evt.data); } catch { return; }
+
+                const event = msg.msg || msg.event || '';
+
+                if (event === 'process_starts') {
+                    if (progressEl) progressEl.innerHTML = '<span class="loading"></span> Generating audio…';
+                }
+
+                if (event === 'process_completed' || event === 'complete') {
+                    clearTimeout(timeout);
+                    es.close();
+                    activeSource = null;
+
+                    const outputData = msg.output?.data ?? [];
+                    let audioFile = outputData[0] ?? null;
+                    if (audioFile && typeof audioFile === 'object') {
+                        // Gradio ≥ 4 returns { path, url, orig_name, … }
+                        audioFile = audioFile.url || audioFile.path || audioFile.name || null;
+                    }
+                    resolve(audioFile);
+                }
+
+                if (event === 'error' || msg.error) {
+                    clearTimeout(timeout);
+                    es.close();
+                    activeSource = null;
+                    reject(new Error(msg.error || 'Server returned an error event'));
+                }
+            };
+
+            es.onerror = (e) => {
+                // EventSource fires onerror on normal close too; only reject if
+                // the stream never delivered a complete event.
+                clearTimeout(timeout);
+                es.close();
+                activeSource = null;
+                reject(new Error('SSE connection error — is the server reachable?'));
+            };
+        });
+    }
+
+    // ── Display audio ─────────────────────────────────────────────────────────
+    function displayAudio(audioFile) {
+        const panel    = document.getElementById('audioPanel');
+        const controls = document.getElementById('audioControls');
+
+        // Build the URL:
+        // • Gradio ≥ 4 may already return a full URL (audioFile.url above)
+        // • Older Gradio returns a server-relative path like /tmp/gradio/xyz.wav
+        //   which is served by Gradio at  /file=<path>
+        let audioUrl;
+        if (/^https?:\/\//.test(audioFile)) {
+            audioUrl = audioFile;
+        } else {
+            // Strip any accidental double-slash
+            const path = audioFile.startsWith('/') ? audioFile : `/${audioFile}`;
+            audioUrl = `${SERVER_URL}/file=${path}`;
+        }
+
+        const filename = withTimestamp(audioFile.split('/').pop() || `tts_${Date.now()}.wav`);
+
+        controls.innerHTML = `
+            <audio id="ttsAudio" controls autoplay style="width:100%;max-width:420px;">
+                <source src="${audioUrl}" type="audio/wav">
+                Your browser does not support the audio element.
+            </audio>
+            <a id="saveLink"
+               href="${audioUrl}"
+               download="${filename}"
+               style="padding:10px 20px;background:#28a745;color:white;
+                      border-radius:8px;text-decoration:none;font-weight:bold;
+                      display:inline-block;">
+                💾 Save As
+            </a>
+            <div style="margin-top:8px;font-size:12px;color:#666;">
+                File: ${filename}<br>
+                URL: <a href="${audioUrl}" target="_blank" style="color:#667eea;word-break:break-all;">${audioUrl}</a>
+            </div>
+        `;
+
+        panel.style.display = 'block';
+        window.currentAudioUrl = audioUrl;
+
+        // If the server is cross-origin, the <audio> src will work fine but
+        // <a download> may be blocked by the browser's same-origin download
+        // restriction.  We add a fallback that fetches the blob first.
+        document.getElementById('saveLink').addEventListener('click', async (e) => {
+            e.preventDefault();
+            await saveAudio(audioUrl, filename);
+        });
+    }
+
+    // ── Save: fetch blob so the browser "Save As" dialog always appears ───────
+    async function saveAudio(url, filename = withTimestamp(`tts_audio_${Date.now()}.wav`)) {
+        try {
+            const r = await fetch(url);
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            const blob   = await r.blob();
+            const objUrl = URL.createObjectURL(blob);
+            const a      = Object.assign(document.createElement('a'), {
+                href:     objUrl,
+                download: filename
+            });
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(objUrl), 5000);
+        } catch (err) {
+            // CORS fallback: open in new tab so the user can save manually
+            alert(`Direct download blocked (CORS). Opening audio in a new tab — use Ctrl+S / right-click → Save.\n\n${err.message}`);
+            window.open(url, '_blank');
+        }
+    }
+
+    // ── Utility buttons ───────────────────────────────────────────────────────
+    async function simpleQueueCall(fnIndex, label) {
+        const progress = document.getElementById('progress');
+        progress.innerHTML = `<span class="loading"></span> Calling ${label}…`;
+        try {
+            const r = await fetch(`${SERVER_URL}/gradio_api/queue/join`, {
+                method:  'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body:    JSON.stringify({ data: [], fn_index: fnIndex, session_hash: newHash() })
+            });
+            if (!r.ok) throw new Error(`HTTP ${r.status}`);
+            progress.innerHTML = `✅ ${label} executed!`;
+        } catch (err) {
+            progress.innerHTML = `❌ ${label} failed: ${err.message}`;
+        }
+    }
+
+    const callLambda    = () => simpleQueueCall(4,  'lambda_1');
+    const refreshTiles  = () => simpleQueueCall(25, 'Refresh Tiles');
+
+    // ── Init ──────────────────────────────────────────────────────────────────
+    testConnection();
+
+    // Prefill fields from URL params if provided
+    const _paramText    = URL_PARAMS.get('text');
+    const _paramInstruct = URL_PARAMS.get('instruct');
+    if (_paramText)     document.getElementById('textInput').value = _paramText;
+    if (_paramInstruct) document.getElementById('instruct').value  = _paramInstruct;
+
+    setInterval(() => { sessionHash = newHash(); }, 3_600_000);
+</script>
+</body>
+</html>
