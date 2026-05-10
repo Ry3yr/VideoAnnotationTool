@@ -13,7 +13,8 @@ A browser-based tool to annotate your videos **after recording** with precise au
 
 - **Qwen3-TTS integration** – [Optional] Generate custom voice snippets via [QwenTTS](https://github.com/QwenLM/Qwen3-TTS) API
 - **SRT parser** – Upload subtitle files to auto-generate annotation timestamps
-
+(Subtitles can be extracted from onscreen text via: https://github.com/timminator/VideOCR/releases/download/v1.5.1/VideOCR-GPU-v1.5.1-CUDA-12.9-setup-x64.exe )
+  
 ## Quick Start
 
 ### Just open the HTML file
