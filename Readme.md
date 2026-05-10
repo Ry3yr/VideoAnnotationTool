@@ -8,8 +8,8 @@ A browser-based tool to annotate your videos **after recording** with precise au
 - **Post-recording annotation** – Add audio comments, corrections, or narration over existing tracks
 - **FFmpeg command generation** – Outputs ready-to-use merge commands
 - **Batch import** – Auto-place audio files by filename timestamp:
-  - `hh_mm_ss_name.mp3` (e.g., `01_15_30_correction.mp3`)
-  - `mm_ss_name.mp3` (e.g., `05_45_note.mp3`)
+  - `(hh_mm_ss)_name.mp3` (e.g., `(01_15_30)_correction.mp3`)
+  - `(mm_ss)_name.mp3` (e.g., `(05_45)_note.mp3`)
 
 - **Qwen3-TTS integration** – [Optional] Generate custom voice snippets via [QwenTTS](https://github.com/QwenLM/Qwen3-TTS) API
 - **SRT parser** – Upload subtitle files to auto-generate annotation timestamps
