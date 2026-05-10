@@ -1,0 +1,375 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes">
+    <title>SRT Navigator · keyword filter & smart links</title>
+    <style>
+        /* ultra compressed + added styles for new features */
+        *{box-sizing:border-box;margin:0;padding:0}body{background:#eef2f5;font-family:system-ui,-apple-system,Segoe UI,Roboto,sans-serif;min-height:100vh;padding:1rem;display:flex;justify-content:center;align-items:center}.app{max-width:1000px;width:100%;background:#fff;border-radius:1.5rem;box-shadow:0 12px 30px rgba(0,0,0,0.1);overflow:hidden}.hero{padding:1.2rem 1.5rem;border-bottom:1px solid #e9edf2}h1{font-size:1.6rem;font-weight:600;background:linear-gradient(135deg,#1f2b3c,#2c3e4e);background-clip:text;-webkit-background-clip:text;color:transparent;margin-bottom:0.2rem}.sub{color:#5b6f82;font-size:0.85rem;margin-bottom:1rem}.upload-card{background:#f8fafd;border-radius:1.2rem;padding:1rem 1.2rem;border:1px dashed #b9cadb;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0.8rem}.file-label{background:#1e2f3c;color:#fff;padding:0.5rem 1rem;border-radius:2rem;font-size:0.8rem;font-weight:500;cursor:pointer;transition:0.1s;display:inline-flex;align-items:center;gap:6px}.file-label:hover{background:#0f212e}#fileInput{display:none}.file-info{font-size:0.75rem;color:#2c4c6e;background:#eef3fa;padding:0.3rem 0.8rem;border-radius:2rem;word-break:break-all}.parse-status{font-size:0.75rem;color:#2a6b47;background:#e6f4ea;padding:0.25rem 1rem;border-radius:2rem;display:inline-block;margin-top:0.6rem}.filter-area{background:#fdfcf8;padding:0.8rem 1.5rem;border-bottom:1px solid #e9edf2;display:flex;flex-wrap:wrap;align-items:center;gap:0.8rem;justify-content:space-between}.filter-box{display:flex;align-items:center;gap:0.5rem;flex:2;min-width:160px}.filter-box label{font-size:0.75rem;font-weight:600;color:#2c4e6e}.filter-box input{flex:1;padding:0.45rem 0.8rem;border-radius:2rem;border:1px solid #cfdde8;background:#fff;font-size:0.8rem;outline:none}.filter-box input:focus{border-color:#1e2f3c}.clear-filter{background:#eef2f8;border:none;padding:0.3rem 0.9rem;border-radius:2rem;font-size:0.7rem;cursor:pointer;color:#284b63}.filter-stat{font-size:0.7rem;color:#5b6f82;background:#f3f6fa;padding:0.2rem 0.8rem;border-radius:2rem}.nav-panel{background:#fff;padding:0.8rem 1.5rem;border-bottom:1px solid #e2e8f0;display:flex;flex-wrap:wrap;align-items:center;justify-content:space-between;gap:0.8rem}.counter{font-weight:600;background:#eef2f9;padding:0.25rem 0.9rem;border-radius:40px;font-size:0.8rem;color:#1f3b4e}.nav-buttons{display:flex;gap:0.6rem;flex-wrap:wrap}.nav-btn{background:#f0f3f8;border:none;padding:0.4rem 1rem;border-radius:2rem;font-weight:500;font-size:0.8rem;cursor:pointer;transition:0.1s;color:#1f2a3e}.nav-btn.primary{background:#1e2f3c;color:#fff}.nav-btn:hover{opacity:0.8;transform:scale(0.97)}.jump-input{display:flex;gap:0.4rem;align-items:center}.jump-input input{width:70px;padding:0.35rem 0.4rem;border-radius:2rem;border:1px solid #cad2db;text-align:center;font-size:0.8rem}.jump-input button{background:#eef2f9;border:none;padding:0.35rem 0.8rem;border-radius:2rem;font-size:0.75rem;cursor:pointer}.entry-viewer{background:#fff;padding:1.5rem;min-height:320px}.entry-card{background:#fbfdfe;border-radius:1.2rem;border:1px solid #eef2f8;box-shadow:0 1px 2px rgba(0,0,0,0.02);padding:1.2rem}.entry-index{display:inline-block;background:#e9edf2;padding:0.2rem 0.8rem;border-radius:40px;font-size:0.7rem;font-weight:600;letter-spacing:0.3px;margin-bottom:0.8rem;color:#2c3e50}.timestamp{font-family:monospace;font-size:0.8rem;background:#f1f5f9;padding:0.3rem 0.7rem;border-radius:20px;display:inline-block;margin-bottom:1rem;color:#0b3b5f}.subtitle-text{font-size:1.05rem;line-height:1.5;color:#1e2b36;white-space:pre-wrap;word-break:break-word;margin-top:0.5rem;background:#ffffff;padding:0.8rem;border-radius:1rem;border-left:3px solid #1e2f3c}.empty-state{text-align:center;color:#8ba0b0;padding:2rem;font-size:0.9rem}.link-footer{margin-top:1.2rem;padding-top:0.8rem;border-top:1px solid #eef2f8;font-size:0.8rem}.smart-link{background:#ecf7f0;padding:0.45rem 0.9rem;border-radius:2rem;display:inline-flex;align-items:center;gap:8px;text-decoration:none;color:#145c3a;font-weight:500;transition:0.1s;font-size:0.75rem}.smart-link:hover{background:#d4e9df;transform:translateY(-1px)}.footer-note{background:#f9fbfd;padding:0.6rem 1.5rem;border-top:1px solid #edf2f7;font-size:0.7rem;color:#6c859b;text-align:center}
+        @media (max-width:600px){.hero,.nav-panel,.entry-viewer,.filter-area{padding:1rem}.upload-card{flex-direction:column;align-items:stretch}.nav-panel,.filter-area{flex-direction:column;align-items:stretch}.nav-buttons{justify-content:center}}
+    </style>
+</head>
+<body>
+<div class="app">
+    <div class="hero">
+        <h1>🎬 SRT Navigator · Keyword flow</h1>
+        <div class="sub">Upload .srt → filter entries by keyword | Prev/Next jump only between matches | Smart timestamp links (parentheses)</div>
+        <div class="upload-card">
+            <label class="file-label">📂 Choose SRT file<input type="file" id="fileInput" accept=".srt, .txt, .sub, text/plain"></label>
+            <span class="file-info" id="fileNameDisplay">no file selected</span>
+        </div>
+        <div id="statusMsg" class="parse-status">⏳ waiting for upload</div>
+    </div>
+
+    <!-- FILTER AREA: keyword textbox -->
+    <div class="filter-area" id="filterArea" style="display: none;">
+        <div class="filter-box">
+            <label>🔍 Keyword filter:</label>
+            <input type="text" id="keywordInput" placeholder="type word... (case-insensitive)" autocomplete="off">
+            <button class="clear-filter" id="clearFilterBtn">✖ clear</button>
+        </div>
+        <div class="filter-stat" id="filterStat">0 matches</div>
+    </div>
+
+    <div class="nav-panel" id="navPanel" style="display: none;">
+        <div class="counter" id="counterText">— / —</div>
+        <div class="nav-buttons">
+            <button class="nav-btn" id="prevBtn" aria-label="previous match">◀ Prev match</button>
+            <button class="nav-btn primary" id="nextBtn" aria-label="next match">Next match ▶</button>
+        </div>
+        <div class="jump-input">
+            <input type="number" id="jumpIndex" placeholder="#" min="1" step="1">
+            <button id="jumpBtn">Jump</button>
+        </div>
+    </div>
+
+    <div class="entry-viewer" id="entryViewer">
+        <div class="empty-state">✨ Upload a valid SRT file.<br>Use keyword box to filter → navigation moves only through matching entries.<br>Timestamp format: <code>(MM_SS)</code> or <code>(HH_MM_SS)</code> with parentheses.</div>
+    </div>
+    <div class="footer-note">✔️ Prev/Next respects keyword filter | Timestamp wrapped in parentheses: (00_24) or (01_12_05)</div>
+</div>
+
+<script>
+    (function(){
+        // ---------- SRT PARSER (robust, BOM, etc) ----------
+        function parseSRT(content) {
+            let raw = content.replace(/\r\n/g, '\n').replace(/\r/g, '\n');
+            if (raw.charCodeAt(0) === 0xFEFF) raw = raw.slice(1);
+            const blocks = raw.split(/\n\s*\n/);
+            const entries = [];
+            for (let block of blocks) {
+                block = block.trim();
+                if (!block) continue;
+                const lines = block.split('\n');
+                if (lines.length < 2) continue;
+                let idxLine = lines[0].trim();
+                let index = parseInt(idxLine, 10);
+                if (isNaN(index)) index = entries.length + 1;
+                let timeLineIdx = -1;
+                for (let i = 0; i < lines.length; i++) {
+                    if (lines[i].includes('-->')) { timeLineIdx = i; break; }
+                }
+                if (timeLineIdx === -1) continue;
+                const timestampRaw = lines[timeLineIdx].trim();
+                let startTimeStr = '', endTimeStr = '';
+                const arrowMatch = timestampRaw.match(/([0-9:,]+)\s*-->\s*([0-9:,]+)/);
+                if (arrowMatch) {
+                    startTimeStr = arrowMatch[1].trim();
+                    endTimeStr = arrowMatch[2].trim();
+                } else {
+                    startTimeStr = timestampRaw;
+                }
+                let textLines = lines.slice(timeLineIdx + 1);
+                let text = textLines.join('\n').trim();
+                if (text === "") text = "[silent caption]";
+                entries.push({
+                    id: index,
+                    startRaw: startTimeStr,
+                    endRaw: endTimeStr,
+                    timestampDisplay: timestampRaw,
+                    text: text,
+                    // compute parenthesized compact timestamp for link (based on start time)
+                    compactTimestampParentheses: convertToParenthesesCompact(startTimeStr)
+                });
+            }
+            for (let i = 0; i < entries.length; i++) entries[i].id = i + 1;
+            return entries;
+        }
+
+        // Convert "00:00:35,700" or "00:00:35.700" or "01:24:12,000" → parentheses format:
+        // if less than 1 hour: (MM_SS)  e.g. (00_35)
+        // if >=1 hour: (HH_MM_SS) e.g. (01_24_12)
+        // Important: wrap inside parentheses like (00_24) not 00_24_ 
+        function convertToParenthesesCompact(timestamp) {
+            if (!timestamp) return "(00_00)";
+            // match HH:MM:SS,mmm or HH:MM:SS.mmm
+            let match = timestamp.match(/(\d{2,3}):(\d{2}):(\d{2})[,\.]\d+/);
+            if (!match) {
+                // try without milliseconds: 00:00:35
+                match = timestamp.match(/(\d{2,3}):(\d{2}):(\d{2})/);
+            }
+            if (!match) {
+                // fallback: maybe plain mm:ss? but srt standard usually HH:MM:SS,ms
+                let fallback = timestamp.match(/(\d{2}):(\d{2})/);
+                if(fallback) {
+                    let mm = parseInt(fallback[1],10);
+                    let ss = parseInt(fallback[2],10);
+                    let inner = `${String(mm).padStart(2,'0')}_${String(ss).padStart(2,'0')}`;
+                    return `(${inner})`;
+                }
+                return "(00_00)";
+            }
+            let hours = parseInt(match[1],10);
+            let minutes = parseInt(match[2],10);
+            let seconds = parseInt(match[3],10);
+            
+            if (hours > 0 || (hours === 0 && minutes >= 60)) { 
+                // if hours>0 OR non-standard minutes>59 -> hour-based
+                let totalHours = hours;
+                let totalMinutes = minutes;
+                let totalSeconds = seconds;
+                if (totalHours === 0 && totalMinutes >= 60) {
+                    totalHours = Math.floor(totalMinutes / 60);
+                    totalMinutes = totalMinutes % 60;
+                }
+                let inner = `${String(totalHours).padStart(2,'0')}_${String(totalMinutes).padStart(2,'0')}_${String(totalSeconds).padStart(2,'0')}`;
+                return `(${inner})`;
+            } else {
+                // less than one hour → format (MM_SS)
+                let inner = `${String(minutes).padStart(2,'0')}_${String(seconds).padStart(2,'0')}`;
+                return `(${inner})`;
+            }
+        }
+
+        // Build access.html link with encoded text & timestamp (parentheses INCLUDED as part of timestamp parameter)
+        // Example: access.html?text=hello&timestamp=(00_35)&instruct=speak%20naturally
+        // The parentheses are inside timestamp value
+        function buildAccessLink(entry) {
+            const encodedText = encodeURIComponent(entry.text);
+            // compact timestamp already includes parentheses, e.g. "(00_35)" or "(01_12_05)"
+            const timestampParam = entry.compactTimestampParentheses;
+            return `access.html?text=${encodedText}&timestamp=${timestampParam}&instruct=speak%20naturally`;
+        }
+
+        // ---------- STATE ----------
+        let fullEntries = [];          // all parsed entries
+        let filteredIndices = [];      // indices (0-based) from fullEntries that match keyword
+        let currentFilteredPos = 0;    // position inside filteredIndices array
+        let activeKeyword = "";         // current filter string
+        
+        // DOM elements
+        const fileInput = document.getElementById('fileInput');
+        const fileNameDisplay = document.getElementById('fileNameDisplay');
+        const statusMsgDiv = document.getElementById('statusMsg');
+        const filterArea = document.getElementById('filterArea');
+        const navPanel = document.getElementById('navPanel');
+        const entryViewer = document.getElementById('entryViewer');
+        const counterText = document.getElementById('counterText');
+        const prevBtn = document.getElementById('prevBtn');
+        const nextBtn = document.getElementById('nextBtn');
+        const jumpBtn = document.getElementById('jumpBtn');
+        const jumpIndexInput = document.getElementById('jumpIndex');
+        const keywordInput = document.getElementById('keywordInput');
+        const clearFilterBtn = document.getElementById('clearFilterBtn');
+        const filterStatSpan = document.getElementById('filterStat');
+        
+        // helper: apply keyword filter, rebuild filteredIndices, reset position
+        function applyKeywordFilter() {
+            if (!fullEntries.length) {
+                filteredIndices = [];
+                currentFilteredPos = 0;
+                updateFilterUIAndRender();
+                return;
+            }
+            const kw = keywordInput.value.trim();
+            activeKeyword = kw;
+            if (kw === "") {
+                // no filter -> show all
+                filteredIndices = fullEntries.map((_, idx) => idx);
+            } else {
+                const lowerKw = kw.toLowerCase();
+                filteredIndices = [];
+                for (let i = 0; i < fullEntries.length; i++) {
+                    if (fullEntries[i].text.toLowerCase().includes(lowerKw)) {
+                        filteredIndices.push(i);
+                    }
+                }
+            }
+            // reset position to first match if any, else -1
+            if (filteredIndices.length > 0) {
+                currentFilteredPos = 0;
+            } else {
+                currentFilteredPos = -1;
+            }
+            updateFilterUIAndRender();
+        }
+        
+        function updateFilterUIAndRender() {
+            if (!fullEntries.length) {
+                filterArea.style.display = 'none';
+                navPanel.style.display = 'none';
+                entryViewer.innerHTML = `<div class="empty-state">📄 No subtitles loaded. Upload .srt file</div>`;
+                filterStatSpan.innerText = `0 matches`;
+                return;
+            }
+            filterArea.style.display = 'flex';
+            const matchCount = filteredIndices.length;
+            filterStatSpan.innerText = `${matchCount} match${matchCount !== 1 ? 'es' : ''}`;
+            if (matchCount === 0) {
+                navPanel.style.display = 'flex';
+                counterText.innerText = `0 / 0`;
+                entryViewer.innerHTML = `<div class="empty-state">🔍 No entries contain "${escapeHtml(activeKeyword || '...')}"<br>Try different keyword or clear filter.</div>`;
+                return;
+            }
+            navPanel.style.display = 'flex';
+            // render current filtered entry
+            const realIndex = filteredIndices[currentFilteredPos];
+            const entry = fullEntries[realIndex];
+            counterText.innerText = `${currentFilteredPos+1} / ${matchCount}`;
+            renderEntryCard(entry, currentFilteredPos+1, matchCount);
+            // update jump placeholder regarding filtered matches (jump by match position)
+            jumpIndexInput.placeholder = `1-${matchCount}`;
+            jumpIndexInput.max = matchCount;
+            jumpIndexInput.min = 1;
+        }
+        
+        function renderEntryCard(entry, matchPos, totalMatches) {
+            const safeText = entry.text.replace(/[&<>]/g, function(m) {
+                if (m === '&') return '&amp;';
+                if (m === '<') return '&lt;';
+                if (m === '>') return '&gt;';
+                return m;
+            }).replace(/\n/g, '<br>');
+            const timestampPretty = entry.timestampDisplay;
+            const linkUrl = buildAccessLink(entry);
+            const compactDisplay = entry.compactTimestampParentheses; // already has parentheses
+            
+            const html = `
+                <div class="entry-card">
+                    <div class="entry-index">#${entry.id} ${filteredIndices.length > 0 && fullEntries.length !== filteredIndices.length ? `(match ${matchPos}/${totalMatches})` : ''}</div>
+                    <div class="timestamp">⏱️ ${timestampPretty}  →  🕒 compact: ${compactDisplay}</div>
+                    <div class="subtitle-text">${safeText}</div>
+                    <div class="link-footer">
+                        <a href="${linkUrl}" target="_blank" class="smart-link" rel="noopener noreferrer">
+                            🔗 open in access.html → speak naturally
+                        </a>
+                        <span style="font-size:0.65rem; margin-left:8px; color:#6883a0;">📌 timestamp parameter: ${compactDisplay}</span>
+                    </div>
+                </div>
+            `;
+            entryViewer.innerHTML = html;
+        }
+        
+        function escapeHtml(str) { if(!str) return ''; return str.replace(/[&<>]/g, function(m){if(m==='&') return '&amp;'; if(m==='<') return '&lt;'; if(m==='>') return '&gt;'; return m;});}
+        
+        // navigation on filtered matches
+        function goPrevMatch() {
+            if (!fullEntries.length || filteredIndices.length === 0) return;
+            if (currentFilteredPos > 0) {
+                currentFilteredPos--;
+                updateFilterUIAndRender();
+            } else {
+                statusMsgDiv.innerHTML = `⏮️ Already at first keyword match.`;
+                setTimeout(()=>{ if(fullEntries.length) statusMsgDiv.innerHTML = `✅ ${filteredIndices.length} matches`; },800);
+            }
+        }
+        
+        function goNextMatch() {
+            if (!fullEntries.length || filteredIndices.length === 0) return;
+            if (currentFilteredPos < filteredIndices.length - 1) {
+                currentFilteredPos++;
+                updateFilterUIAndRender();
+            } else {
+                statusMsgDiv.innerHTML = `⏭️ Already at last keyword match.`;
+                setTimeout(()=>{ if(fullEntries.length) statusMsgDiv.innerHTML = `✅ ${filteredIndices.length} matches`; },800);
+            }
+        }
+        
+        function jumpToMatchPosition() {
+            if (!fullEntries.length || filteredIndices.length === 0) return;
+            let rawVal = jumpIndexInput.value.trim();
+            if (rawVal === "") return;
+            let target = parseInt(rawVal, 10);
+            if (isNaN(target) || target < 1) target = 1;
+            if (target > filteredIndices.length) target = filteredIndices.length;
+            currentFilteredPos = target - 1;
+            updateFilterUIAndRender();
+            jumpIndexInput.value = "";
+            statusMsgDiv.innerHTML = `🎯 Jumped to match #${target}`;
+            setTimeout(()=>{ if(fullEntries.length) statusMsgDiv.innerHTML = `✅ ${filteredIndices.length} matches`; },1200);
+        }
+        
+        // load file and reset filter
+        function loadAndParseSRT(file) {
+            if (!file) return;
+            fileNameDisplay.innerText = file.name;
+            statusMsgDiv.innerHTML = '📖 parsing subtitle...';
+            statusMsgDiv.style.background = "#eef3fa";
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                const content = e.target.result;
+                try {
+                    const parsed = parseSRT(content);
+                    if (!parsed.length) {
+                        statusMsgDiv.innerHTML = '⚠️ No valid SRT blocks found.';
+                        statusMsgDiv.style.background = "#ffe6e5";
+                        fullEntries = [];
+                        filteredIndices = [];
+                        keywordInput.value = '';
+                        updateFilterUIAndRender();
+                        return;
+                    }
+                    fullEntries = parsed;
+                    // reset keyword input & reapply filter (empty filter shows all)
+                    keywordInput.value = '';
+                    applyKeywordFilter();  // builds filteredIndices = all entries
+                    statusMsgDiv.innerHTML = `✅ Loaded ${fullEntries.length} subtitles. Use keyword box to filter.`;
+                    statusMsgDiv.style.background = "#e0f2e9";
+                } catch(err) {
+                    statusMsgDiv.innerHTML = `❌ Parsing error: ${err.message}`;
+                    statusMsgDiv.style.background = "#ffe6e5";
+                    fullEntries = [];
+                    updateFilterUIAndRender();
+                }
+            };
+            reader.onerror = () => {
+                statusMsgDiv.innerHTML = '❌ File read error.';
+                fullEntries = [];
+                updateFilterUIAndRender();
+            };
+            reader.readAsText(file, 'UTF-8');
+        }
+        
+        // event listeners
+        fileInput.addEventListener('change', (e) => {
+            const file = e.target.files[0];
+            if (file) loadAndParseSRT(file);
+            else { fileNameDisplay.innerText = "no file selected"; fullEntries = []; updateFilterUIAndRender(); }
+        });
+        
+        prevBtn.addEventListener('click', goPrevMatch);
+        nextBtn.addEventListener('click', goNextMatch);
+        jumpBtn.addEventListener('click', jumpToMatchPosition);
+        jumpIndexInput.addEventListener('keypress', (e) => { if(e.key === 'Enter') jumpToMatchPosition(); });
+        keywordInput.addEventListener('input', () => { applyKeywordFilter(); });
+        clearFilterBtn.addEventListener('click', () => { keywordInput.value = ''; applyKeywordFilter(); });
+        
+        // drag and drop enhancement
+        const dropZone = document.querySelector('.upload-card');
+        if(dropZone){
+            dropZone.addEventListener('dragover', (e) => { e.preventDefault(); dropZone.style.background = "#eef3fc";});
+            dropZone.addEventListener('dragleave', () => { dropZone.style.background = "#f8fafd";});
+            dropZone.addEventListener('drop', (e) => {
+                e.preventDefault(); dropZone.style.background = "#f8fafd";
+                const files = e.dataTransfer.files;
+                if(files.length) loadAndParseSRT(files[0]);
+            });
+        }
+        // initial state
+        updateFilterUIAndRender();
+        statusMsgDiv.innerHTML = "📂 Upload SRT, then type keyword → prev/next only jumps among matches. Timestamp = (00_24) format.";
+    })();
+</script>
+</body>
+</html>
