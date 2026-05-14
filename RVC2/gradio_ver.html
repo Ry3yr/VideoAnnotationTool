@@ -1,0 +1,361 @@
+REQUIRES <a target="_blank" href="https://cdn.jsdelivr.net/npm/@gradio/client@2.2.0/dist/">Gradio JS</a><br><hr><br
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Ultimate RVC Studio</title>
+
+<style>
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+font-family:Arial,sans-serif;
+background:linear-gradient(135deg,#1a1a2e 0%,#16213e 100%);
+min-height:100vh;padding:20px
+}
+.container{
+max-width:700px;margin:0 auto;background:#fff;border-radius:20px;
+box-shadow:0 20px 60px rgba(0,0,0,.3);overflow:hidden
+}
+.header{
+background:linear-gradient(135deg,#667eea 0%,#764ba2 100%);
+color:#fff;padding:20px;text-align:center
+}
+.content{padding:25px}
+.status-bar{
+display:flex;justify-content:space-between;align-items:center;
+margin-bottom:15px;padding:8px 12px;background:#f0f0f0;border-radius:8px
+}
+button{
+padding:8px 16px;border:none;border-radius:6px;cursor:pointer;font-weight:bold
+}
+.btn-refresh{background:#007bff;color:#fff}
+.btn-browse{background:#6c757d;color:#fff;width:100%;margin-top:8px}
+.btn-convert{background:#28a745;color:#fff;width:100%;padding:12px;font-size:16px;margin:15px 0}
+.file-box{border:2px dashed #ccc;border-radius:10px;padding:15px;margin:10px 0;background:#fafafa}
+.file-path{background:#e9ecef;padding:10px;border-radius:6px;font-size:12px;word-break:break-all;font-family:monospace;margin-top:8px}
+.settings-box{border:1px solid #dee2e6;border-radius:10px;padding:15px;margin:15px 0}
+.setting-row{display:flex;gap:10px;margin-bottom:10px;flex-wrap:wrap}
+.log-box{background:#111;color:#00ff9d;font-family:monospace;font-size:11px;padding:12px;height:280px;overflow:auto;border-radius:8px}
+.progress{display:none;height:4px;background:#ddd;margin:10px 0}
+.progress.active{display:block}
+.progress-bar{height:100%;background:#28a745;animation:move 1s linear infinite}
+@keyframes move{0%{transform:translateX(-100%)}100%{transform:translateX(100%)}}
+.audio-player {
+    margin-top: 15px;
+    padding: 15px;
+    background: #f8f9fa;
+    border-radius: 10px;
+    display: none;
+}
+.audio-player.active {
+    display: block;
+    animation: slideIn 0.3s ease;
+}
+@keyframes slideIn {
+    from { opacity: 0; transform: translateY(-10px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+.audio-player audio {
+    width: 100%;
+    margin-bottom: 10px;
+}
+.download-link {
+    display: inline-block;
+    background: #007bff;
+    color: white;
+    padding: 6px 12px;
+    text-decoration: none;
+    border-radius: 5px;
+    font-size: 12px;
+    margin-top: 5px;
+}
+.download-link:hover {
+    background: #0056b3;
+}
+</style>
+</head>
+
+<body>
+<div class="container">
+<div class="header"><h1>🎤 Ultimate RVC Studio</h1></div>
+
+<div class="content">
+
+<div class="status-bar">
+<span id="statusLabel">Connecting...</span>
+<button class="btn-refresh" id="refreshBtn">Refresh Models</button>
+</div>
+
+<div class="file-box">
+<strong>Select Audio</strong>
+<div class="file-path" id="filePath">No file</div>
+<button class="btn-browse" id="browseBtn">Browse</button>
+<input type="file" id="fileInput" style="display:none">
+</div>
+
+<div>
+<select id="modelCombo" style="width:100%;padding:8px">
+<option>loading...</option>
+</select>
+</div>
+
+<div class="settings-box">
+<div class="setting-row">
+<input id="pitchVar" type="number" value="0">
+<select id="algoCombo">
+<option value="rmvpe">rmvpe</option>
+<option value="crepe">crepe</option>
+<option value="crepe-tiny">crepe-tiny</option>
+<option value="fcpe">fcpe</option>
+</select>
+<select id="formatCombo">
+<option value="mp3">mp3</option>
+<option value="wav">wav</option>
+<option value="flac">flac</option>
+</select>
+</div>
+</div>
+
+<button class="btn-convert" id="convertBtn">CONVERT</button>
+
+<div class="progress" id="progress"><div class="progress-bar"></div></div>
+<div class="log-box" id="logBox"></div>
+
+<div class="audio-player" id="audioPlayer">
+    <audio id="convertedAudio" controls></audio>
+    <a id="downloadLink" class="download-link" download>⬇ Download Audio</a>
+</div>
+
+</div>
+</div>
+
+<script type="module">
+import { Client } from "./dist/index.js";
+
+const SERVER_URL = "http://192.168.0.163:7860";
+
+let client = null;
+let sessionReady = false;
+let uploadedFile = null;
+let MODEL_CHOICES = [];
+
+function log(msg){
+  const d=document.createElement("div");
+  d.textContent=`[${new Date().toLocaleTimeString()}] ${msg}`;
+  document.getElementById("logBox").appendChild(d);
+  d.scrollIntoView({behavior:"smooth"});
+}
+
+/* ================= SESSION ================= */
+async function initSession(){
+  log("connecting...");
+  try {
+    client = await Client.connect(SERVER_URL);
+    await client.predict("/_init_dropdowns", []);
+    const res = await client.predict("/_init_dropdowns", []);
+    const raw = res?.data?.[2]?.choices || [];
+    MODEL_CHOICES = raw.map(c => Array.isArray(c) ? c[0] : c);
+    sessionReady = true;
+    updateModelsUI();
+    log(`ready (${MODEL_CHOICES.length} models)`);
+    document.getElementById("statusLabel").textContent = "Ready";
+  } catch(e) {
+    log("Connect failed: " + e);
+  }
+}
+
+function updateModelsUI(){
+  const sel = document.getElementById("modelCombo");
+  sel.innerHTML = "";
+  MODEL_CHOICES.forEach(m=>{
+    const o=document.createElement("option");
+    o.value=m; o.textContent=m;
+    sel.appendChild(o);
+  });
+}
+
+document.getElementById("refreshBtn").onclick = initSession;
+
+/* ================= FILE ================= */
+document.getElementById("browseBtn").onclick=()=>fileInput.click();
+document.getElementById("fileInput").onchange=e=>{
+  uploadedFile=e.target.files[0];
+  if(uploadedFile){
+    document.getElementById("filePath").textContent=uploadedFile.name;
+    log("selected "+uploadedFile.name);
+    // Hide audio player when new file is selected
+    document.getElementById("audioPlayer").classList.remove("active");
+  }
+};
+
+// Helper function to get accessible audio URL from server path
+async function getAccessibleAudioUrl(serverPath) {
+    // Try multiple URL patterns that Gradio might use
+    const cleanPath = serverPath.replace(/\\/g, '/');
+    const fileName = cleanPath.split('/').pop();
+    
+    const urlPatterns = [
+        `${SERVER_URL}/gradio_api/file=${cleanPath}`,           // Pattern 1: gradio_api with full path
+        `${SERVER_URL}/file=${cleanPath}`,                      // Pattern 2: direct file with full path
+        `${SERVER_URL}/gradio_api/file=${fileName}`,            // Pattern 3: gradio_api with just filename
+        `${SERVER_URL}/file=${fileName}`,                       // Pattern 4: direct file with just filename
+        `${SERVER_URL}/proxy?url=${encodeURIComponent(cleanPath)}` // Pattern 5: proxy endpoint
+    ];
+    
+    // Try each pattern until one works
+    for (const url of urlPatterns) {
+        try {
+            log(`Testing URL pattern: ${url.substring(0, 80)}...`);
+            const response = await fetch(url, { method: 'HEAD', timeout: 2000 });
+            if (response.ok) {
+                log(`✓ Working URL found!`);
+                return url;
+            }
+        } catch(e) {
+            // Continue to next pattern
+            continue;
+        }
+    }
+    
+    // If no pattern works, try to fetch the file through Gradio's file API
+    try {
+        const formData = new FormData();
+        formData.append('path', cleanPath);
+        const response = await fetch(`${SERVER_URL}/gradio_api/raw_file`, { 
+            method: 'POST',
+            body: formData
+        });
+        if (response.ok) {
+            const blob = await response.blob();
+            if (blob.size > 0) {
+                const objectUrl = URL.createObjectURL(blob);
+                log(`✓ Retrieved audio via raw_file endpoint (${(blob.size/1024).toFixed(1)} KB)`);
+                return objectUrl;
+            }
+        }
+    } catch(e) {
+        log(`Raw file fetch failed: ${e.message}`);
+    }
+    
+    // Last resort: return the original path with gradio_api/file pattern
+    // Some Gradio versions serve files directly
+    return `${SERVER_URL}/gradio_api/file=${cleanPath}`;
+}
+
+/* ================= CONVERT ================= */
+async function doConvert(){
+  if(!sessionReady || !uploadedFile){
+    log("not ready or no file");
+    return;
+  }
+
+  const model = document.getElementById("modelCombo").value;
+  const pitch = parseInt(document.getElementById("pitchVar").value);
+  const algo = document.getElementById("algoCombo").value;
+  const format = document.getElementById("formatCombo").value;
+
+  document.getElementById("progress").classList.add("active");
+  document.getElementById("convertBtn").disabled = true;
+  document.getElementById("audioPlayer").classList.remove("active");
+
+  try {
+    log("setting mode...");
+    await client.predict("/partial", ["Local file"]);
+
+    log("uploading...");
+    const fd = new FormData();
+    fd.append("files", uploadedFile);
+    const upRes = await fetch(`${SERVER_URL}/gradio_api/upload`, { method:"POST", body:fd });
+    const upJson = await upRes.json();
+    const filePath = Array.isArray(upJson) ? upJson[0] : (upJson?.path || upJson);
+
+    log("converting...");
+    const result = await client.predict("/partial_6", [
+      filePath,
+      model,
+      pitch,
+      0,
+      algo,
+      0.3,
+      1,
+      0.33,
+      false,
+      false,
+      1,
+      false,
+      155,
+      false,
+      0.7,
+      "contentvec",
+      null,
+      0,
+      0.15,
+      0.2,
+      0.8,
+      0.7,
+      0,
+      0,
+      0,
+      44100,
+      format,
+      ""
+    ]);
+
+    log("finalizing...");
+    await client.predict("/partial_7", []);
+    await client.predict("/partial_8", []);
+
+    const out = result?.data?.[8];
+    if(out){
+      // Extract the file path from the output
+      let finalPath = (typeof out === 'object' && out !== null) ? (out.path || out.name) : out;
+      
+      if (typeof finalPath === 'string') {
+        log(`Conversion complete! Output file: ${finalPath.split('/').pop()}`);
+        
+        // Get accessible URL for the audio file
+        const audioUrl = await getAccessibleAudioUrl(finalPath);
+        
+        // Display audio player with the converted file
+        const audioElement = document.getElementById("convertedAudio");
+        const downloadLink = document.getElementById("downloadLink");
+        
+        // Set audio source
+        audioElement.src = audioUrl;
+        audioElement.load();
+        
+        // Set download link
+        const fileName = finalPath.split(/[\\/]/).pop();
+        downloadLink.href = audioUrl;
+        downloadLink.download = fileName;
+        
+        // Show the player
+        document.getElementById("audioPlayer").classList.add("active");
+        
+        log("✓ Audio player ready!");
+        
+        // Try to play automatically (user gesture may be required)
+        audioElement.play().catch(e => log("Click play to hear the result"));
+      } else {
+        log("Error: Output found but path is invalid.");
+      }
+    } else {
+      log("no output found in result");
+    }
+
+  } catch(err){
+    log("ERROR: " + err);
+  } finally {
+    document.getElementById("progress").classList.remove("active");
+    document.getElementById("convertBtn").disabled = false;
+  }
+}
+
+document.getElementById("convertBtn").onclick = doConvert;
+initSession();
+</script>
+
+</body>
+</html>
